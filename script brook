@@ -1,0 +1,284 @@
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+local function createButton(parent, text, pos, size)
+    local btn = Instance.new("TextButton")
+    btn.Parent = parent
+    btn.Text = text
+    btn.Position = pos
+    btn.Size = size
+    btn.BackgroundColor3 = Color3.fromRGB(40,40,40)
+    btn.TextColor3 = Color3.new(1,1,1)
+    btn.Font = Enum.Font.SourceSansBold
+    btn.TextSize = 20
+    btn.AutoButtonColor = true
+    btn.AnchorPoint = Vector2.new(0.5,0.5)
+    return btn
+end
+
+local function createPanel(parent, pos, size)
+    local panel = Instance.new("Frame")
+    panel.Parent = parent
+    panel.Position = pos
+    panel.Size = size
+    panel.BackgroundColor3 = Color3.fromRGB(30,30,30)
+    panel.BorderSizePixel = 0
+    panel.AnchorPoint = Vector2.new(0.5,0.5)
+    return panel
+end
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "CustomPanel"
+gui.ResetOnSpawn = false
+gui.Parent = PlayerGui
+gui.IgnoreGuiInset = true
+
+-- Tela de crédito antes do botão
+local creditPanel = createPanel(gui, UDim2.new(0.5,0,0.5,0), UDim2.new(0.6,0,0.45,0))
+local creditLabel = Instance.new("TextLabel")
+creditLabel.Parent = creditPanel
+creditLabel.Size = UDim2.new(1,0,1,0)
+creditLabel.Position = UDim2.new(0,0,0,0)
+creditLabel.BackgroundTransparency = 1
+creditLabel.Text = "script feito por ksxxp7 para juquinha"
+creditLabel.TextColor3 = Color3.new(1,1,1)
+creditLabel.Font = Enum.Font.SourceSansBold
+creditLabel.TextScaled = true
+
+-- Botão fixo abrir/fechar (canto superior esquerdo), começa invisível
+local toggleBtn = createButton(gui, "Abrir Painel", UDim2.new(0, 80, 0, 60), UDim2.new(0, 160, 0, 50))
+toggleBtn.Visible = false
+
+-- Painel principal (centralizado, menor)
+local mainPanel = createPanel(gui, UDim2.new(0.5,0,0.5,0), UDim2.new(0.6,0,0.45,0))
+mainPanel.Visible = false
+
+-- Opções à esquerda (maior, ocupa 38%)
+local optionPanel = createPanel(mainPanel, UDim2.new(0.19,0,0.5,0), UDim2.new(0.38,0,1,0))
+optionPanel.AnchorPoint = Vector2.new(0.5,0.5)
+
+-- Área funcional à direita (mais próxima das opções)
+local actionPanel = createPanel(mainPanel, UDim2.new(0.58,0,0.5,0), UDim2.new(0.58,0,1,0))
+actionPanel.AnchorPoint = Vector2.new(0.5,0.5)
+
+local state = {
+    selected = nil,
+    speedActive = false,
+    jumpActive = false,
+    espActive = false,
+    flyActive = false,
+}
+
+local function clearActionPanel()
+    for _,child in ipairs(actionPanel:GetChildren()) do
+        child:Destroy()
+    end
+end
+
+-- SPEED
+local function showSpeed()
+    clearActionPanel()
+    local btn = createButton(actionPanel, state.speedActive and "Desativar Speed" or "Ativar Speed", UDim2.new(0.5,0,0.2,0), UDim2.new(0.7,0,0.18,0))
+    local speedBox
+    if state.speedActive then
+        speedBox = Instance.new("TextBox")
+        speedBox.Parent = actionPanel
+        speedBox.Position = UDim2.new(0.5,0,0.55,0)
+        speedBox.Size = UDim2.new(0.9,0,0.18,0)
+        speedBox.AnchorPoint = Vector2.new(0.5,0.5)
+        speedBox.PlaceholderText = "Velocidade"
+        speedBox.Text = tostring(LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") and LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed or 16)
+        speedBox.BackgroundColor3 = Color3.fromRGB(20,20,60)
+        speedBox.TextColor3 = Color3.new(1,1,1)
+        speedBox.TextSize = 20
+        speedBox.Font = Enum.Font.SourceSansBold
+        speedBox.ClearTextOnFocus = false
+        speedBox.FocusLost:Connect(function()
+            local val = tonumber(speedBox.Text)
+            if val and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+                LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = val
+            end
+        end)
+    end
+    btn.MouseButton1Click:Connect(function()
+        state.speedActive = not state.speedActive
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+            LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = state.speedActive and 32 or 16
+        end
+        showSpeed()
+    end)
+end
+
+-- JUMP
+local function showJump()
+    clearActionPanel()
+    local btn = createButton(actionPanel, state.jumpActive and "Desativar Jump" or "Ativar Jump", UDim2.new(0.5,0,0.2,0), UDim2.new(0.7,0,0.18,0))
+    local jumpBox
+    if state.jumpActive then
+        jumpBox = Instance.new("TextBox")
+        jumpBox.Parent = actionPanel
+        jumpBox.Position = UDim2.new(0.5,0,0.55,0)
+        jumpBox.Size = UDim2.new(0.9,0,0.18,0)
+        jumpBox.AnchorPoint = Vector2.new(0.5,0.5)
+        jumpBox.PlaceholderText = "Altura do Jump"
+        jumpBox.Text = tostring(LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") and LocalPlayer.Character:FindFirstChildOfClass("Humanoid").JumpPower or 50)
+        jumpBox.BackgroundColor3 = Color3.fromRGB(20,60,20)
+        jumpBox.TextColor3 = Color3.new(1,1,1)
+        jumpBox.TextSize = 20
+        jumpBox.Font = Enum.Font.SourceSansBold
+        jumpBox.ClearTextOnFocus = false
+        jumpBox.FocusLost:Connect(function()
+            local val = tonumber(jumpBox.Text)
+            if val and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+                LocalPlayer.Character:FindFirstChildOfClass("Humanoid").JumpPower = val
+            end
+        end)
+    end
+    btn.MouseButton1Click:Connect(function()
+        state.jumpActive = not state.jumpActive
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+            LocalPlayer.Character:FindFirstChildOfClass("Humanoid").JumpPower = state.jumpActive and 100 or 50
+        end
+        showJump()
+    end)
+end
+
+-- ESP
+local espBoxes = {}
+local function updateESP()
+    for _,box in pairs(espBoxes) do box:Destroy() end
+    espBoxes = {}
+    if state.espActive then
+        for _,plr in pairs(Players:GetPlayers()) do
+            if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                local adorn = Instance.new("BoxHandleAdornment")
+                adorn.Parent = plr.Character.HumanoidRootPart
+                adorn.Size = Vector3.new(4,7,2)
+                adorn.Adornee = plr.Character.HumanoidRootPart
+                adorn.Color3 = Color3.fromRGB(255,0,0)
+                adorn.Transparency = 0.6
+                adorn.ZIndex = 10
+                adorn.AlwaysOnTop = true
+                table.insert(espBoxes, adorn)
+            end
+        end
+    end
+end
+
+local function showESP()
+    clearActionPanel()
+    local btn = createButton(actionPanel, state.espActive and "Desativar ESP" or "Ativar ESP", UDim2.new(0.5,0,0.3,0), UDim2.new(0.7,0,0.18,0))
+    btn.MouseButton1Click:Connect(function()
+        state.espActive = not state.espActive
+        updateESP()
+        showESP()
+    end)
+end
+
+Players.PlayerAdded:Connect(function(plr)
+    if state.espActive then updateESP() end
+end)
+Players.PlayerRemoving:Connect(function(plr)
+    if state.espActive then updateESP() end
+end)
+
+-- FLY
+local flyConn
+local function flyFunc(active)
+    if flyConn then
+        flyConn:Disconnect()
+        flyConn = nil
+    end
+    local humanoid = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+    local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not humanoid or not root then return end
+    if active then
+        humanoid.PlatformStand = true
+        -- Sobe um pouco e para
+        root.Velocity = Vector3.new(0, 50, 0)
+        task.delay(0.25, function()
+            if humanoid and root then
+                root.Velocity = Vector3.new(0, 0, 0)
+            end
+        end)
+        flyConn = game:GetService("RunService").RenderStepped:Connect(function()
+            if root then
+                local UIS = game:GetService("UserInputService")
+                local cam = workspace.CurrentCamera
+                local moveDir = Vector3.new(0,0,0)
+                -- W/S/A/D movimentam na direção da câmera
+                if UIS:IsKeyDown(Enum.KeyCode.W) then
+                    moveDir = moveDir + cam.CFrame.LookVector
+                end
+                if UIS:IsKeyDown(Enum.KeyCode.S) then
+                    moveDir = moveDir - cam.CFrame.LookVector
+                end
+                if UIS:IsKeyDown(Enum.KeyCode.D) then
+                    moveDir = moveDir + cam.CFrame.RightVector
+                end
+                if UIS:IsKeyDown(Enum.KeyCode.A) then
+                    moveDir = moveDir - cam.CFrame.RightVector
+                end
+                -- Normaliza para evitar aceleração excessiva
+                if moveDir.Magnitude > 0 then
+                    moveDir = moveDir.Unit
+                end
+                -- Impede atravessar o chão
+                local newPosY = root.Position.Y + moveDir.Y * 2
+                if newPosY < 2 then
+                    moveDir = Vector3.new(moveDir.X, math.max(0, moveDir.Y), moveDir.Z)
+                end
+                root.Velocity = moveDir * 50
+            end
+        end)
+    else
+        humanoid.PlatformStand = false
+        if flyConn then flyConn:Disconnect(); flyConn=nil end
+    end
+end
+
+local function showFly()
+    clearActionPanel()
+    local btn = createButton(actionPanel, state.flyActive and "Desativar Fly" or "Ativar Fly", UDim2.new(0.5,0,0.3,0), UDim2.new(0.7,0,0.18,0))
+    btn.MouseButton1Click:Connect(function()
+        state.flyActive = not state.flyActive
+        flyFunc(state.flyActive)
+        showFly()
+    end)
+end
+
+-- Botões de opções (coluna, grandes para toque)
+local optBtns = {}
+local optNames = {"Speed", "Jump", "ESP", "Fly"}
+local optFuncs = {showSpeed, showJump, showESP, showFly}
+for i,name in ipairs(optNames) do
+    local btn = createButton(optionPanel, name, UDim2.new(0.5,0,0.2 + 0.2*(i-1),0), UDim2.new(0.85,0,0.16,0))
+    btn.AnchorPoint = Vector2.new(0.5,0.5)
+    btn.MouseButton1Click:Connect(function()
+        state.selected = name
+        optFuncs[i]()
+    end)
+    optBtns[name] = btn
+end
+
+-- Abrir/fechar painel
+toggleBtn.MouseButton1Click:Connect(function()
+    mainPanel.Visible = not mainPanel.Visible
+    toggleBtn.Text = mainPanel.Visible and "Fechar Painel" or "Abrir Painel"
+end)
+
+mainPanel.Visible = false
+toggleBtn.Text = "Abrir Painel"
+
+game:GetService("RunService").RenderStepped:Connect(function()
+    if state.espActive then updateESP() end
+end)
+
+-- Exibe crédito, depois mostra o botão (agora por 5 segundos)
+toggleBtn.Visible = false
+creditPanel.Visible = true
+task.delay(5, function()
+    creditPanel.Visible = false
+    toggleBtn.Visible = true
+end)
